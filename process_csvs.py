@@ -53,9 +53,32 @@ def main():
             if not df.empty:
                 count += len(df)
                 print(f"Saving {len(df)} rows from {file}")
-                df.to_sql(args.table_name, conn, if_exists='append', index=True)
+                df.to_sql(args.table_name, conn, if_exists='append', index=False)
         except Exception as e:
-            print(f"Error reading {file}, size {os.path.getsize(file)}: {e}")
+            print(f"Error importing {file}, size {os.path.getsize(file)}: {e}")
+
+    print("Finished importing CSV files into database.")
+
+    print(f"Adding additional columns to {args.table_name}: action, handler, status")
+    conn.execute(f"ALTER TABLE {args.table_name} ADD COLUMN action TEXT NULL;")
+    conn.execute(f"ALTER TABLE {args.table_name} ADD COLUMN handler TEXT NULL;")
+    conn.execute(f"ALTER TABLE {args.table_name} ADD COLUMN status TEXT NULL;")
+
+    print(f"Creating indexes on {args.table_name} table.")
+    conn.execute(f"CREATE INDEX ix_file_indexes_path ON {args.table_name} (path);")
+    conn.execute(f"CREATE INDEX ix_file_indexes_filename ON {args.table_name} (filename);")
+    conn.execute(f"CREATE INDEX ix_file_indexes_extension ON {args.table_name} (extension);")
+    conn.execute(f"CREATE INDEX ix_file_indexes_size ON {args.table_name} (size);")
+    conn.execute(f"CREATE INDEX ix_file_indexes_type ON {args.table_name} (type);")
+    conn.execute(f"CREATE INDEX ix_file_indexes_mime_type ON {args.table_name} (mime_type);")
+    conn.execute(f"CREATE INDEX ix_file_indexes_hash ON {args.table_name} (hash);")
+    conn.execute(f"CREATE INDEX ix_file_indexes_hash_w_name_created ON {args.table_name} (hash_w_name_created);")
+    conn.execute(f"CREATE INDEX ix_file_indexes_hash_w_created ON {args.table_name} (hash_w_created);")
+    conn.execute(f"CREATE INDEX ix_file_indexes_hash_w_name_modified ON {args.table_name} (hash_w_name_modified);")
+    conn.execute(f"CREATE INDEX ix_file_indexes_hash_w_modified ON {args.table_name} (hash_w_modified);")
+    conn.execute(f"CREATE INDEX ix_file_indexes_action ON {args.table_name} (action);")
+    conn.execute(f"CREATE INDEX ix_file_indexes_handler ON {args.table_name} (handler);")
+    conn.execute(f"CREATE INDEX ix_file_indexes_status ON {args.table_name} (status);")
 
     conn.close()
 
