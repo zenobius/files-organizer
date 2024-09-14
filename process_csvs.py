@@ -3,25 +3,7 @@ import argparse
 import sqlite3
 import pandas as pd
 
-# Function to get all CSV files from the root folder and its subdirectories
-def get_csv_files(root_folder):
-    csv_files = []
-    for root, _, files in os.walk(root_folder):
-        for file in files:
-            if file.endswith(".csv"):
-                csv_files.append(os.path.join(root, file))
-    return csv_files
-
-# Function to combine CSV files into a single DataFrame
-def combine_csv_files(csv_files):
-    combined_df = pd.concat([pd.read_csv(file) for file in csv_files], ignore_index=True)
-    return combined_df
-
-# Function to load DataFrame into SQLite database
-def load_to_sqlite(df, db_name, table_name):
-    conn = sqlite3.connect(db_name)
-    df.to_sql(table_name, conn, if_exists='replace', index=False)
-    conn.close()
+from common import get_list_of_files_from_ext
 
 # Main function to combine CSV files from a root folder and insert into SQLite
 def main():
@@ -35,19 +17,49 @@ def main():
     args = parser.parse_args()
 
     # Step 1: Get all CSV files from the root folder
-    csv_files = get_csv_files(args.root_folder)
+    csv_files, _ = get_list_of_files_from_ext(args.root_folder, "csv")
 
     if not csv_files:
         print(f"No CSV files found in the specified root folder: {args.root_folder}")
         return
 
-    # Step 2: Combine CSV files into a single DataFrame
-    combined_df = combine_csv_files(csv_files)
+    print(f"Found {len(csv_files)} CSV files, processing...")
 
-    # Step 3: Insert the combined DataFrame into an SQLite database
-    load_to_sqlite(combined_df, args.output_db_file, args.table_name)
+    # Step 2: Combine CSV files into a single DataFrame and save to SQLite db
+    dtypes = {
+        "path": "string",
+        "filename": "string",
+        "extension": "string",
+        "size": int,
+        "type": "string",
+        "mime_type": "string",
+        "created_time": "float",
+        "modified_time": "float",
+        "hash": "string",
+        "hash_w_name_created": "string",
+        "hash_w_created": "string",
+        "hash_w_name_modified": "string",
+        "hash_w_modified": "string"
+        }
 
-    print(f"CSV files combined and inserted into {args.output_db_file} (table: {args.table_name}).")
+    conn = sqlite3.connect(args.output_db_file)
+
+    count = 0
+
+    for file in csv_files:
+        print(f"Importing {file}...")
+        try:
+            df = pd.read_csv(file, dtype=dtypes)
+            if not df.empty:
+                count += len(df)
+                print(f"Saving {len(df)} rows from {file}")
+                df.to_sql(args.table_name, conn, if_exists='append', index=True)
+        except Exception as e:
+            print(f"Error reading {file}, size {os.path.getsize(file)}: {e}")
+
+    conn.close()
+
+    print(f"{len(csv_files)} CSV files containing {count} rows combined and inserted into {args.output_db_file} (table: {args.table_name}).")
 
 if __name__ == "__main__":
     main()
