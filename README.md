@@ -57,7 +57,7 @@ Now you can work the data. Here are some examples:
 `Import-Csv -Path "e:\scripts\bck_indexes_check\qwe" -Header Path | ForEach-Object { Remove-Item -Path $_.Path -Force -Recurse }`
 
 * Find duplicates of files based on hash (simple: type [file/dir] + name + size)
-`sqlite3 e_indexed_files.db "SELECT * FROM indexed_files ind JOIN ( SELECT hash FROM indexed_files GROUP BY hash HAVING COUNT(hash) > 1 ) dupl ON ind.hash = dupl.hash;" > c:\duplicates_by_hash.csv`
+`sqlite3 c:\database_containing_indexes_file.db "SELECT * FROM indexed_files ind JOIN ( SELECT hash FROM indexed_files GROUP BY hash HAVING COUNT(hash) > 1 ) dupl ON ind.hash = dupl.hash;" > c:\duplicates_by_hash.csv`
 
 And so on and so on..
 
